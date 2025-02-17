@@ -13,7 +13,7 @@ app.use(bodyParser.json()); // Parse JSON request bodies
 const API_KEY = process.env.HUGGINGFACE_API_KEY;
 
 // ✅ Primary model (which may fail)
-const API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
+const API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
 // ✅ Backup model (if primary fails)
 const FALLBACK_API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
 
