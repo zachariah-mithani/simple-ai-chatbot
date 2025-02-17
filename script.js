@@ -5,7 +5,7 @@ async function sendMessage() {
     const chatBox = document.getElementById("chat-box");
     chatBox.innerHTML += `<p><strong>You:</strong> ${userInput}</p>`;
 
-    const response = await fetch("https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium", {
+    const response = await fetch("https://simple-ai-chatbot-w5a9.onrender.com/chat", {
         method: "POST",
         headers: { "Authorization": "Bearer hf_YOUR_HUGGINGFACE_API_KEY", "Content-Type": "application/json" },
         body: JSON.stringify({ inputs: userInput })
