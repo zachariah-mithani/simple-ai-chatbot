@@ -7,24 +7,20 @@ const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fet
 dotenv.config(); // Load environment variables from .env
 
 const app = express();
-app.use(cors()); // Enable CORS for frontend requests
+app.use(cors()); // Enable CORS for frontend access
 app.use(bodyParser.json()); // Parse JSON request bodies
 
-const API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
-const FALLBACK_API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
 const API_KEY = process.env.HUGGINGFACE_API_KEY;
 
-app.post("/chat", async (req, res) => {
-    const userMessage = req.body.message;
+// ✅ Primary model (which may fail)
+const API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
+// ✅ Backup model (if primary fails)
+const FALLBACK_API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
 
-    if (!userMessage) {
-        return res.json({ reply: "Please enter a message!" });
-    }
-
+// Function to call Hugging Face API safely
+async function fetchChatbotResponse(modelUrl, userMessage) {
     try {
-        console.log(`🔹 Received message from user: "${userMessage}"`);
-
-        const response = await fetch(API_URL, {
+        const response = await fetch(modelUrl, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${API_KEY}`,
@@ -34,39 +30,50 @@ app.post("/chat", async (req, res) => {
         });
 
         const data = await response.json();
-        console.log("🔍 Hugging Face API Response:", JSON.stringify(data, null, 2));
 
+        // ✅ Log Hugging Face API response for debugging
+        console.log(`🔍 API Response from ${modelUrl}:`, JSON.stringify(data, null, 2));
+
+        // ✅ Handle API errors (e.g., inactive model)
         if (data.error) {
-            console.error("⚠️ Model Error:", data.error);
-            console.log("🔄 Switching to fallback model...");
-            const fallbackResponse = await fetch(FALLBACK_API_URL, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ inputs: userMessage })
-            });
-            const fallbackData = await fallbackResponse.json();
-            console.log("🔍 Fallback API Response:", JSON.stringify(fallbackData, null, 2));
-
-            if (fallbackData && fallbackData.length > 0 && fallbackData[0].generated_text) {
-                return res.json({ reply: fallbackData[0].generated_text });
-            } else {
-                return res.json({ reply: "Sorry, I couldn't understand that. Try again!" });
-            }
+            console.error("⚠️ Hugging Face API Error:", data.error);
+            return { error: data.error };
         }
 
+        // ✅ Return valid AI response
         if (data && data.length > 0 && data[0].generated_text) {
-            res.json({ reply: data[0].generated_text });
+            return { reply: data[0].generated_text };
         } else {
-            res.json({ reply: "I didn't quite understand that. Can you try again?" });
+            return { reply: "I didn't quite understand that. Can you try again?" };
         }
     } catch (error) {
-        console.error("❌ API Request Failed:", error);
-        res.status(500).json({ reply: "Sorry, an error occurred. Please try again later!" });
+        console.error("❌ Fetch Error:", error);
+        return { reply: "Sorry, I'm having trouble right now. Try again later!" };
     }
+}
+
+// Chatbot endpoint
+app.post("/chat", async (req, res) => {
+    const userMessage = req.body.message;
+
+    if (!userMessage) {
+        return res.json({ reply: "Please enter a message!" });
+    }
+
+    console.log(`📩 User Input: "${userMessage}"`);
+
+    // ✅ Try primary model first
+    let chatbotResponse = await fetchChatbotResponse(API_URL, userMessage);
+
+    // ✅ If primary model fails, use fallback model
+    if (chatbotResponse.error) {
+        console.log("🔄 Switching to fallback model...");
+        chatbotResponse = await fetchChatbotResponse(FALLBACK_API_URL, userMessage);
+    }
+
+    res.json(chatbotResponse);
 });
 
+// ✅ Server listens on PORT
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${POR
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
