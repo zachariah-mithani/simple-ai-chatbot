@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
 const app = express();
+const cors = require("cors");
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -28,3 +29,4 @@ app.post("/chat", async (req, res) => {
 });
 
 app.listen(3000, () => console.log("Server running on port 3000"));
+
