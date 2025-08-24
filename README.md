@@ -18,7 +18,7 @@ Required Python libraries (listed in requirements.txt)
 ## Installation
 
 ### Clone the repository:
-git clone https://github.com/your-username/simple-ai-chatbot.git
+git clone https://github.com/zachariah-mithani/simple-ai-chatbot.git
 cd simple-ai-chatbot
 
 
